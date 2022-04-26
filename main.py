@@ -105,29 +105,29 @@ async def help1(message: types.Message):
 
 
 @dp.callback_query_handler(text='common')
-async def register_asks(message):
+async def register_asks(call: types.CallbackQuery):
     global asks, ind, stop
     if stop:
-        await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
+        await call.message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
-        telegram_values = [message.from_user.first_name + " " + message.from_user.last_name, 'Мужчина',
-                           message.from_user.username, '', '', '']
+        telegram_values = [call.from_user.first_name + " " + call.from_user.last_name, 'Мужчина',
+                           call.from_user.username, '', '', '']
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         if ind <= 2:
             if len(telegram_values[ind]) != 0:
                 keyboard.add(types.KeyboardButton(text=f'{telegram_values[ind]}'))
             else:
-                await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
+                await call.message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
                 stop = True
         if ind == 1:
             keyboard.add(types.KeyboardButton(text='Женщина'))
         if ind < len(asks):
-            await message.answer(f'Укажите {asks[ind]}', reply_markup=keyboard)
+            await call.message.answer(f'Укажите {asks[ind]}', reply_markup=keyboard)
         else:
             keyboard = types.InlineKeyboardMarkup()
             keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='update_blank'))
             keyboard.add(types.InlineKeyboardButton(text='Нет', callback_data='end_register'))
-            await message.answer('Хотите изменить анкету?', reply_markup=keyboard)
+            await call.message.answer('Хотите изменить анкету?', reply_markup=keyboard)
 
 
 @dp.callback_query_handler(text='authorize')
@@ -251,6 +251,7 @@ async def db_insert(message: types.Message):
                 if register_flag:
                     await message.reply('Эу нормально общайся. ОК?')
                 elif search_flag:
+                    print(message.text)
                     response = requests.get(f'http://127.0.0.1:5000/staff_api/search/<str:{message.text}>')
                     if response:
                         response = response.json()
@@ -371,7 +372,7 @@ async def next1(message: types.Message):
         else:
             if count_values == len(db_values):
                 ind += 1
-                await register_asks(message)
+                await register_asks_message(message)
                 count_values += 1
             else:
                 await message.answer('Вы ещё не ответили на прошлый вопрос')
@@ -416,6 +417,31 @@ async def files(message: types.Message):
         await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
         await message.answer('Извините, я очень боюсь файловых бомб >-<')
+
+
+async def register_asks_message(message: types.Message):
+    global asks, ind, stop
+    if stop:
+        await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
+    else:
+        telegram_values = [message.from_user.first_name + " " + message.from_user.last_name, 'Мужчина',
+                           message.from_user.username, '', '', '']
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        if ind <= 2:
+            if len(telegram_values[ind]) != 0:
+                keyboard.add(types.KeyboardButton(text=f'{telegram_values[ind]}'))
+            else:
+                await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
+                stop = True
+        if ind == 1:
+            keyboard.add(types.KeyboardButton(text='Женщина'))
+        if ind < len(asks):
+            await message.answer(f'Укажите {asks[ind]}', reply_markup=keyboard)
+        else:
+            keyboard = types.InlineKeyboardMarkup()
+            keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='update_blank'))
+            keyboard.add(types.InlineKeyboardButton(text='Нет', callback_data='end_register'))
+            await message.answer('Хотите изменить анкету?', reply_markup=keyboard)
 
 
 if __name__ == "__main__":
