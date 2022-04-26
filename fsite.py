@@ -7,7 +7,7 @@ from FDataBase import FDataBase
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from UserLogin import UserLogin
 
-DATABASE = 'meetings_data_new.db'
+DATABASE = 'api/meetings_data.db'
 DEBUG = True
 SECRET_KEY = 'Albert123'
 
