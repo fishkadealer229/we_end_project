@@ -254,16 +254,16 @@ async def db_insert(message: types.Message):
                     response = requests.get(f'http://127.0.0.1:5000/staff_api/search/<str:{message.text}>')
                     if response:
                         response = response.json()
-                        name, surname = response['name_surname'].split()  # str
-                        gender = response['gender']  # str
-                        username = response['username']  # str
-                        username = '@' + username
-                        profession = response['profession']  # str
-                        user_id = response['user_id']  # str
-                        photo_path = f'\\photos\\{user_id}.jpg'
-                        success = response['success']  # ok or no # str
-                        text = f'Имя: {name}\nФамилия: {surname}\nПол: {gender}\nДолжность: {profession}\n{username}'
+                        success = response['success']
                         if success == 'ok':
+                            name, surname = response['name_surname'].split()  # str
+                            gender = response['gender']  # str
+                            username = response['username']  # str
+                            username = '@' + username
+                            profession = response['profession']  # str
+                            user_id = response['user_id']  # str
+                            photo_path = f'\\photos\\{user_id}.jpg'
+                            text = f'Имя: {name}\nФамилия: {surname}\nПол: {gender}\nДолжность: {profession}\n{username}'
                             await bot.send_photo(message.chat.id, types.InputFile(photo_path), caption=text)
                         else:
                             await message.answer('К сожалению, по эти данным ничего не найдено:(')

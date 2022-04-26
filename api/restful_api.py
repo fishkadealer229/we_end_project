@@ -48,17 +48,22 @@ class Search(Resource):
             value = 'name_surname'
         else:
             value = 'profession'
-        for people in list(cur.execute(f'select name_surname, gender, username, profession, user_id from users where'
-                                       f' {value}={search_text}')):
-            people = list(people)
-            data = {
-                'name_surname': people[0],
-                'gender': people[1],
-                'username': people[2],
-                'profession': people[3],
-                'user_id': people[4],
-                'success': 'ok'}
-            return jsonify(data)
+        ask = f'select name_surname, gender, username, profession, user_id from users where {value}="{search_text}"'
+        lst = list(cur.execute(ask))
+        if len(lst) != 0:
+            for people in lst:
+                people = list(people)
+                print(people)
+                data = {
+                    'name_surname': people[0],
+                    'gender': people[1],
+                    'username': people[2],
+                    'profession': people[3],
+                    'user_id': people[4],
+                    'success': 'ok'}
+                return jsonify(data)
+        else:
+            return jsonify({'success': 'no'})
 
 
 class Authorize(Resource):
