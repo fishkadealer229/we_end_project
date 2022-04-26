@@ -44,7 +44,7 @@ class EndRegistration(Resource):
 
 class Search(Resource):
     def get(self, search_text):
-        if (search_text,) in list(cur.execute('select name_surname from users'))[0]:
+        if search_text in list(list(cur.execute('select name_surname from users'))[0])[0]:
             value = 'name_surname'
         else:
             value = 'profession'
