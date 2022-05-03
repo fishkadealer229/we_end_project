@@ -10,7 +10,7 @@ class UserId(Resource):
     def get(self, user_id):
         ans = {}
         if (user_id,) in list(cur.execute('select user_id from users')):
-            ans['status'] = False
+            ans['status'] = True
             ans['is_admin'] = list(cur.execute(f'select is_admin from users where user_id={user_id}'))[0][0]
         else:
             ans['status'] = False
@@ -19,7 +19,7 @@ class UserId(Resource):
 
 
 class EndRegistration(Resource):
-    def get(self):
+    def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('name_surname', required=True)
         parser.add_argument('gender', required=True)

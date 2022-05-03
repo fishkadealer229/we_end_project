@@ -191,7 +191,7 @@ async def end_register(call: types.CallbackQuery):
                 'user_id': call.from_user.id,
                 'is_admin': admin_flag,
                 'password': db_values[4]}
-            response = requests.get('http://127.0.0.1:5000/staff_api/end_register', data=data)
+            response = requests.post('http://127.0.0.1:5000/staff_api/end_register', data=data)
             if response:
                 response = response.json()
                 if response['success']:
@@ -245,7 +245,6 @@ async def db_insert(message: types.Message):
             if register_flag:
                 await message.reply('Эу нормально общайся. ОК?')
             elif search_flag:
-
                 response = requests.get(f'http://127.0.0.1:5000/staff_api/search/<str:{message.text}>')
                 if response:
                     response = response.json()
@@ -264,7 +263,7 @@ async def db_insert(message: types.Message):
                         await message.answer('К сожалению, по эти данным ничего не найдено:(')
                 else:
                     await message.answer('Извините, произошла ошибка')
-                    await message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason}, ")")')
+                    await message.answer(f'Http статус: {response.status_code} ({response.reason})')
             elif update_flag:
                 new_value = True
                 if new_value and message.text in blank_values:
@@ -280,8 +279,16 @@ async def db_insert(message: types.Message):
                 if flag1:
                     if message.text != "Фотография":
                         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-                        keyboard.add(types.KeyboardButton(text=f'{db_values[blank_values.index(update_value)]}'))
-                        await message.answer('Введите новое значение.', reply_markup=keyboard)
+                        if update_value == 'Пароль':
+                            await message.answer('Введите новое значение.', reply_markup=types.ReplyKeyboardRemove())
+                        else:
+                            keyboard.add(types.KeyboardButton(text=f'{db_values[blank_values.index(update_value)]}'))
+                            await message.answer('Введите новое значение.', reply_markup=keyboard)
+                        if update_value == 'Пол':
+                            if db_values[blank_values.index(update_value)] == 'Мужчина':
+                                keyboard.add(types.KeyboardButton(text='Женщина'))
+                            else:
+                                keyboard.add(types.KeyboardButton(text='Мужчина'))
                     else:
                         await message.answer('Отлично', reply_markup=types.ReplyKeyboardRemove())
                         keyboard = types.InlineKeyboardMarkup()
@@ -304,12 +311,10 @@ async def db_insert(message: types.Message):
                 else:
                     json['password'] = message.text
                     authorize_flag = False
-                    print(json)
                     response = requests.get(f'http://127.0.0.1:5000/staff_api/authorize/{json["username"]}/'
                                             f'{json["password"]}')
                     if response:
                         response = response.json()
-                        print(response)
                         if response['success']:
                             keyboard = types.InlineKeyboardMarkup()
                             keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
@@ -326,8 +331,7 @@ async def db_insert(message: types.Message):
                                                  reply_markup=keyboard)
                     else:
                         await message.answer('Извините, произошла ошибка')
-                        await message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason},'
-                                             f' ")")')
+                        await message.answer(f'Http статус: {response.status_code} ({response.reason})')
             else:
                 if len(db_values) == 0:
                     if ' ' in message.text:
@@ -430,7 +434,10 @@ async def register_asks_message(message: types.Message):
         if ind == 1:
             keyboard.add(types.KeyboardButton(text='Женщина'))
         if ind < len(asks):
-            await message.answer(f'Укажите {asks[ind]}', reply_markup=keyboard)
+            if ind <= 2:
+                await message.answer(f'Укажите {asks[ind]}', reply_markup=keyboard)
+            else:
+                await message.answer(f'Укажите {asks[ind]}', reply_markup=types.ReplyKeyboardRemove())
         else:
             keyboard = types.InlineKeyboardMarkup()
             keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='update_blank'))
