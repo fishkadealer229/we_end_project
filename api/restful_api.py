@@ -1,7 +1,8 @@
 from flask import jsonify
 from flask_restful import Resource, reqparse
-import sqlite3
-con = sqlite3.connect(r'api\meetings_data.db', check_same_thread=False)
+from sqlite3 import connect, Error
+
+con = connect(r'api\meetings_data.db', check_same_thread=False)
 cur = con.cursor()
 
 
@@ -35,11 +36,14 @@ class EndRegistration(Resource):
         user_id = args['user_id']
         is_admin = args['is_admin']
         password = args['password']
-        cur.execute(f'insert into users (name_surname, gender, username, profession, user_id, is_admin, password)'
-                    f' values("{name_surname}", "{gender}", "{username}", "{profession}", "{user_id}", "{is_admin}",'
-                    f' "{password}")')
-        con.commit()
-        return jsonify({'success': True})
+        try:
+            cur.execute(f'insert into users (name_surname, gender, username, profession, user_id, is_admin, password)'
+                        f' values("{name_surname}", "{gender}", "{username}", "{profession}", "{user_id}", "{is_admin}",'
+                        f' "{password}")')
+            con.commit()
+            return jsonify({'success': True})
+        except Error:
+            return jsonify({'success': False})
 
 
 class Search(Resource):

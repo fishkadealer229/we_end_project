@@ -191,16 +191,21 @@ async def end_register(call: types.CallbackQuery):
                 'user_id': call.from_user.id,
                 'is_admin': admin_flag,
                 'password': db_values[4]}
-            response = requests.get('http://127.0.0.1:5000/staff_api/end_register', data=data).json()
-            if response['success'] == 'ok':
-                keyboard = types.InlineKeyboardMarkup()
-                keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
-                keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
-                await call.message.answer('Хотите кого-то найти?', reply_markup=keyboard)
-                await call.answer()
-                register_flag = True
-                search_flag = False
-                update_flag = False
+            response = requests.get('http://127.0.0.1:5000/staff_api/end_register', data=data)
+            if response:
+                response = response.json()
+                if response['success']:
+                    keyboard = types.InlineKeyboardMarkup()
+                    keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
+                    keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
+                    await call.message.answer('Хотите кого-то найти?', reply_markup=keyboard)
+                    await call.answer()
+                    register_flag = True
+                    search_flag = False
+                    update_flag = False
+                else:
+                    await call.message.answer(f'К сожалению мы не смогли сохранить ваши даннные. Произошла ошибка')
+                    await call.message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason}, ")")')
             else:
                 await call.message.answer(f'К сожалению мы не смогли сохранить ваши даннные. Произошла ошибка')
                 await call.message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason}, ")")')
@@ -237,122 +242,111 @@ async def db_insert(message: types.Message):
         if stop:
             await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
         else:
-            if 'ты ' in message.text.lower():
-                await message.answer('Кто обзывается, тот сам так называется 😠')
-            elif 'Я ' in message.text:
-                await message.answer('"Я" последняя буква в алфавите, если что')
-            elif 'v ' in message.text.lower() or 'z ' in message.text.lower():
-                await message.answer('Извините, но наш бот находится вне политики, поэтому убидительно'
-                                     ' просим вас больше не отправлять нам данные символы')
-            elif 'война' in message.text or 'war' in message.text:
-                await bot.delete_message(message.chat.id, message.message_id)
-                await message.answer('Правильно "спецоперация"')
-            else:
-                if register_flag:
-                    await message.reply('Эу нормально общайся. ОК?')
-                elif search_flag:
-                    print(message.text)
-                    response = requests.get(f'http://127.0.0.1:5000/staff_api/search/<str:{message.text}>')
+            if register_flag:
+                await message.reply('Эу нормально общайся. ОК?')
+            elif search_flag:
+
+                response = requests.get(f'http://127.0.0.1:5000/staff_api/search/<str:{message.text}>')
+                if response:
+                    response = response.json()
+                    success = response['success']
+                    if success == 'ok':
+                        name, surname = response['name_surname'].split()  # str
+                        gender = response['gender']  # str
+                        username = response['username']  # str
+                        username = '@' + username
+                        profession = response['profession']  # str
+                        user_id = response['user_id']  # str
+                        photo_path = f'\\photos\\{user_id}.jpg'
+                        text = f'Имя: {name}\nФамилия: {surname}\nПол: {gender}\nДолжность: {profession}\n{username}'
+                        await bot.send_photo(message.chat.id, types.InputFile(photo_path), caption=text)
+                    else:
+                        await message.answer('К сожалению, по эти данным ничего не найдено:(')
+                else:
+                    await message.answer('Извините, произошла ошибка')
+                    await message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason}, ")")')
+            elif update_flag:
+                new_value = True
+                if new_value and message.text in blank_values:
+                    update_value = message.text
+                    new_value = False
+                    flag1 = True
+                else:
+                    if flag1:
+                        db_values[blank_values.index(update_value)] = message.text
+                        flag1 = False
+                    else:
+                        flag2 = True
+                if flag1:
+                    if message.text != "Фотография":
+                        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+                        keyboard.add(types.KeyboardButton(text=f'{db_values[blank_values.index(update_value)]}'))
+                        await message.answer('Введите новое значение.', reply_markup=keyboard)
+                    else:
+                        await message.answer('Отлично', reply_markup=types.ReplyKeyboardRemove())
+                        keyboard = types.InlineKeyboardMarkup()
+                        keyboard.add(types.InlineKeyboardButton(text='Оставить прежнию', callback_data='next_data'))
+                        await message.answer('Отправьте новую фотографию', reply_markup=keyboard)
+                else:
+                    keyboard = types.InlineKeyboardMarkup()
+                    keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='update_blank'))
+                    keyboard.add(types.InlineKeyboardButton(text='Нет', callback_data='end_register'))
+                    await message.answer('Ваши данные успешно сохранены', reply_markup=types.ReplyKeyboardRemove())
+                    await message.answer('Хотите ещё что-нибудь изменить?', reply_markup=keyboard)
+            elif authorize_flag:
+                if value1 == 0:
+                    json['username'] = message.text
+                    value1 += 1
+                    keyboard = types.InlineKeyboardMarkup()
+                    keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='authorize'))
+                    keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='no'))
+                    await message.answer('Вы уверены?', reply_markup=keyboard)
+                else:
+                    json['password'] = message.text
+                    authorize_flag = False
+                    print(json)
+                    response = requests.get(f'http://127.0.0.1:5000/staff_api/authorize/{json["username"]}/'
+                                            f'{json["password"]}')
                     if response:
                         response = response.json()
-                        success = response['success']
-                        if success == 'ok':
-                            name, surname = response['name_surname'].split()  # str
-                            gender = response['gender']  # str
-                            username = response['username']  # str
-                            username = '@' + username
-                            profession = response['profession']  # str
-                            user_id = response['user_id']  # str
-                            photo_path = f'\\photos\\{user_id}.jpg'
-                            text = f'Имя: {name}\nФамилия: {surname}\nПол: {gender}\nДолжность: {profession}\n{username}'
-                            await bot.send_photo(message.chat.id, types.InputFile(photo_path), caption=text)
+                        print(response)
+                        if response['success']:
+                            keyboard = types.InlineKeyboardMarkup()
+                            keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
+                            keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
+                            await message.answer('Хотите кого-то найти?', reply_markup=keyboard)
                         else:
-                            await message.answer('К сожалению, по эти данным ничего не найдено:(')
+                            keyboard = types.InlineKeyboardMarkup()
+                            keyboard.add(types.InlineKeyboardButton(text='Зарегестрироваться',
+                                                                    callback_data='common'))
+                            keyboard.add(types.InlineKeyboardButton(text='Попробовать ещё раз',
+                                                                    callback_data='authorize'))
+                            await message.answer('Неверно введён юзернейм или пароль')
+                            await message.answer("Хотите попробовать ещё раз или всё таки зарегестрируетесь?",
+                                                 reply_markup=keyboard)
                     else:
                         await message.answer('Извините, произошла ошибка')
-                        await message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason}, ")")')
-                elif update_flag:
-                    new_value = True
-                    if new_value and message.text in blank_values:
-                        update_value = message.text
-                        new_value = False
-                        flag1 = True
+                        await message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason},'
+                                             f' ")")')
+            else:
+                if len(db_values) == 0:
+                    if ' ' in message.text:
+                        db_values.append(message.text)
                     else:
-                        if flag1:
-                            db_values[blank_values.index(update_value)] = message.text
-                            flag1 = False
-                        else:
-                            flag2 = True
-                    if flag1:
-                        if message.text != "Фотография":
-                            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-                            keyboard.add(types.KeyboardButton(text=f'{db_values[blank_values.index(update_value)]}'))
-                            await message.answer('Введите новое значение.', reply_markup=keyboard)
-                        else:
-                            await message.answer('Отлично', reply_markup=types.ReplyKeyboardRemove())
-                            keyboard = types.InlineKeyboardMarkup()
-                            keyboard.add(types.InlineKeyboardButton(text='Оставить прежнию', callback_data='next_data'))
-                            await message.answer('Отправьте новую фотографию', reply_markup=keyboard)
-                    else:
-                        keyboard = types.InlineKeyboardMarkup()
-                        keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='update_blank'))
-                        keyboard.add(types.InlineKeyboardButton(text='Нет', callback_data='end_register'))
-                        await message.answer('Ваши данные успешно сохранены', reply_markup=types.ReplyKeyboardRemove())
-                        await message.answer('Хотите ещё что-нибудь изменить?', reply_markup=keyboard)
-                elif authorize_flag:
-                    if value1 == 0:
-                        json['username'] = message.text
-                        value1 += 1
-                        keyboard = types.InlineKeyboardMarkup()
-                        keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='authorize'))
-                        keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='no'))
-                        await message.answer('Вы уверены?', reply_markup=keyboard)
-                    else:
-                        json['password'] = message.text
-                        authorize_flag = False
-                        print(json)
-                        response = requests.get(f'http://127.0.0.1:5000/staff_api/authorize/{json["username"]}/'
-                                                f'{json["password"]}')
-                        if response:
-                            response = response.json()
-                            print(response)
-                            if response['success']:
-                                keyboard = types.InlineKeyboardMarkup()
-                                keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
-                                keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
-                                await message.answer('Хотите кого-то найти?', reply_markup=keyboard)
-                            else:
-                                keyboard = types.InlineKeyboardMarkup()
-                                keyboard.add(types.InlineKeyboardButton(text='Зарегестрироваться',
-                                                                        callback_data='common'))
-                                keyboard.add(types.InlineKeyboardButton(text='Попробовать ещё раз',
-                                                                        callback_data='authorize'))
-                                await message.answer('Неверно введён юзернейм или пароль')
-                                await message.answer("Хотите попробовать ещё раз или всё таки зарегестрируетесь?",
-                                                     reply_markup=keyboard)
-                        else:
-                            await message.answer('Извините, произошла ошибка')
-                            await message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason},'
-                                                 f' ")")')
+                        await message.answer('Некорректно введены имя и фамилия')
                 else:
-                    if len(db_values) == 0:
-                        if ' ' in message.text:
-                            db_values.append(message.text)
-                        else:
-                            await message.answer('Некорректно введены имя и фамилия')
+                    if message.text.isdigit():
+                        db_values.append(int(message.text))
                     else:
-                        if message.text.isdigit():
-                            db_values.append(int(message.text))
-                        else:
-                            db_values.append(message.text)
-                    if not photo_flag:
-                        await next1(message)
-                    else:
-                        keyboard = types.InlineKeyboardMarkup()
-                        keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='end_register'))
-                        keyboard.add(types.InlineKeyboardButton(text='Нет', callback_data='update_blank'))
-                        await message.answer('Отлично', reply_markup=types.ReplyKeyboardRemove())
-                        await message.answer('Закончим регистрацию?', reply_markup=keyboard)
+                        db_values.append(message.text)
+                if not photo_flag:
+                    await next1(message)
+                else:
+                    keyboard = types.InlineKeyboardMarkup()
+                    keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='end_register'))
+                    keyboard.add(types.InlineKeyboardButton(text='Нет', callback_data='update_blank'))
+                    await message.answer('Отлично', reply_markup=types.ReplyKeyboardRemove())
+                    await message.answer('Закончим регистрацию?', reply_markup=keyboard)
 
 
 @dp.callback_query_handler(text='no')
