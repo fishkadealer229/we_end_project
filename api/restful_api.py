@@ -52,7 +52,7 @@ class Search(Resource):
             value = 'name_surname'
         else:
             value = 'profession'
-        ask = f'select name_surname, gender, username, profession, user_id from users where {value}="{search_text}"'
+        ask = f'select name_surname, gender, username, profession, user_id from users where {value}="{search_text[5:-1]}"'
         lst = list(cur.execute(ask))
         if len(lst) != 0:
             for people in lst:
@@ -64,10 +64,10 @@ class Search(Resource):
                     'username': people[2],
                     'profession': people[3],
                     'user_id': people[4],
-                    'success': 'ok'}
+                    'success': True}
                 return jsonify(data)
         else:
-            return jsonify({'success': 'no'})
+            return jsonify({'success': False, 'value': value, 'search_text': search_text})
 
 
 class Authorize(Resource):

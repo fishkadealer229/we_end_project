@@ -249,7 +249,7 @@ async def db_insert(message: types.Message):
                 if response:
                     response = response.json()
                     success = response['success']
-                    if success == 'ok':
+                    if success:
                         name, surname = response['name_surname'].split()  # str
                         gender = response['gender']  # str
                         username = response['username']  # str
@@ -259,6 +259,10 @@ async def db_insert(message: types.Message):
                         photo_path = f'\\photos\\{user_id}.jpg'
                         text = f'Имя: {name}\nФамилия: {surname}\nПол: {gender}\nДолжность: {profession}\n{username}'
                         await bot.send_photo(message.chat.id, types.InputFile(photo_path), caption=text)
+                        keyboard = types.InlineKeyboardMarkup()
+                        keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
+                        keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
+                        await message.answer('Хотите кого-то найти?', reply_markup=keyboard)
                     else:
                         await message.answer('К сожалению, по эти данным ничего не найдено:(')
                 else:
