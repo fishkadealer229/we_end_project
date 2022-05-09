@@ -19,27 +19,15 @@ class UserId(Resource):
 
 
 class EndRegistration(Resource):
-    def post(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('name_surname', required=True)
-        parser.add_argument('gender', required=True)
-        parser.add_argument('username', required=True)
-        parser.add_argument('profession', required=True)
-        parser.add_argument('user_id', required=True, type=int)
-        parser.add_argument('is_admin', required=True, type=bool)
-        parser.add_argument('password', required=True)
-        args = parser.parse_args()
-        name_surname = args['name_surname']
-        gender = args['gender']
-        username = args['username']
-        profession = args['profession']
-        user_id = args['user_id']
-        is_admin = args['is_admin']
-        password = args['password']
+    def get(self, name_surname, gender, username, profession, user_id, is_admin, password):
+        if is_admin == 'True':
+            is_admin = True
+        else:
+            is_admin = False
         try:
-            cur.execute(f'insert into users (name_surname, gender, username, profession, user_id, is_admin, password)'
-                        f' values("{name_surname}", "{gender}", "{username}", "{profession}", "{user_id}", "{is_admin}",'
-                        f' "{password}")')
+            cur.execute(f'insert into users (name_surname, gender, username, profession, user_id, is_admin,'
+                        f' password) values("{name_surname}", "{gender}", "{username}", "{profession}", "{user_id}",'
+                        f' "{is_admin}", "{password}")')
             con.commit()
             return jsonify({'success': True})
         except Error:
@@ -48,16 +36,16 @@ class EndRegistration(Resource):
 
 class Search(Resource):
     def get(self, search_text):
-        if search_text in list(list(cur.execute('select name_surname from users'))[0])[0]:
-            value = 'name_surname'
-        else:
-            value = 'profession'
+        lst1 = list(cur.execute('select name_surname from users'))
+        value = 'profession'
+        for i in lst1:
+            if search_text[5:-1] == i[0].strip():
+                value = 'name_surname'
+                break
         ask = f'select name_surname, gender, username, profession, user_id from users where {value}="{search_text[5:-1]}"'
         lst = list(cur.execute(ask))
         if len(lst) != 0:
             for people in lst:
-                people = list(people)
-                print(people)
                 data = {
                     'name_surname': people[0],
                     'gender': people[1],
@@ -67,14 +55,14 @@ class Search(Resource):
                     'success': True}
                 return jsonify(data)
         else:
-            return jsonify({'success': False, 'value': value, 'search_text': search_text})
+            return jsonify({'success': False, 'value': value, 'search_text': search_text, 'lst': lst1})
 
 
 class Authorize(Resource):
     def get(self, username, password):
         username2 = list(cur.execute(f'select username from users'))
         if (username,) in username2:
-            password2 = list(cur.execute(f'select password from users where username = "{username}"'))
+            password2 = list(cur.execute(f'select password from users where username="{username}"'))
             print(password2)
             if password == list(password2[0])[0]:
                 return {'success': True}
