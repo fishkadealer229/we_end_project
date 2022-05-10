@@ -24,14 +24,13 @@ class EndRegistration(Resource):
             is_admin = True
         else:
             is_admin = False
-        try:
-            cur.execute(f'insert into users (name_surname, gender, username, profession, user_id, is_admin,'
-                        f' password) values("{name_surname}", "{gender}", "{username}", "{profession}", "{user_id}",'
-                        f' "{is_admin}", "{password}")')
-            con.commit()
-            return jsonify({'success': True})
-        except Error:
-            return jsonify({'success': False})
+        cur.execute(f'insert into users (name_surname, gender, username, profession, user_id, is_admin,'
+                    f' password) values("{name_surname}", "{gender}", "{username}", "{profession}", "{user_id}",'
+                    f' "{is_admin}", "{password}")')
+        con.commit()
+        return jsonify({'success': True, 'error': 'ok'})
+        # except Error:
+        # return jsonify({'success': False})
 
 
 class Search(Resource):

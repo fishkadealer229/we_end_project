@@ -210,13 +210,6 @@ async def end_register(call: types.CallbackQuery):
         if len(db_values) == 0:
             await begin(call.message)
         else:
-            keyboard = types.InlineKeyboardMarkup()
-            keyboard.add(types.InlineKeyboardButton(text='Перейти к регистрации на сайте',
-                                                    url='http://127.0.0.1:5000/login'))
-            await call.message.answer('Вот ссылка.'
-                                      ' Там вам нужно будет войти по юзернейму и паролю, которые вы здесь ввели.',
-                                      reply_markup=types.ReplyKeyboardRemove())
-            await call.message.answer('Удачи!', reply_markup=keyboard)
             data = f'{db_values[0]}/{db_values[1]}/{db_values[2]}/{db_values[3]}/{call.from_user.id}/{admin_flag}/' \
                    f'{db_values[4]}'
             response = requests.get(f'http://127.0.0.1:5000/staff_api/end_register/{data}')
@@ -233,7 +226,7 @@ async def end_register(call: types.CallbackQuery):
                     update_flag = False
                 else:
                     await call.message.answer(f'К сожалению мы не смогли сохранить ваши даннные.')
-                    await call.message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason}, ")")')
+                    await call.message.answer(response['error'])
             else:
                 await call.message.answer(f'К сожалению мы не смогли сохранить ваши даннные. Произошла ошибка')
                 await call.message.answer(f'"Http статус:", {response.status_code}, "(", {response.reason}, ")")')
@@ -299,10 +292,11 @@ async def db_insert(message: types.Message):
                         else:
                             await message.answer('К сожалению, по эти данным ничего не найдено:(')
                             # await message.answer(f'{response["value"]}={response["search_text"].strip()[5:-1]}')
-                            # await message.answer(response['lst'])
+                            # await message.answer
                     else:
                         await message.answer('Извините, произошла ошибка')
                         await message.answer(f'Http статус: {response.status_code} ({response.reason})')
+                    search_flag = False
                 elif update_flag:
                     new_value = True
                     if new_value and message.text in blank_values:
