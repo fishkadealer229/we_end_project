@@ -26,7 +26,6 @@ login_manager = LoginManager(app)
 
 @login_manager.user_loader
 def load_user(username):
-    print("load_user")
     return UserLogin().fromDB(username, dbase)
 
 
