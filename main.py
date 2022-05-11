@@ -276,7 +276,10 @@ async def db_insert(message: types.Message):
                         response = response.json()
                         success = response['success']
                         if success:
-                            name, surname = response['name_surname'].split()  # str
+                            if ' ' in response['name_surname']:
+                                name, surname = response['name_surname'].split()  # str
+                            else:
+                                name, surname = response['name_surname'], ''
                             gender = response['gender']  # str
                             username = response['username']  # str
                             username = '@' + username
@@ -366,10 +369,7 @@ async def db_insert(message: types.Message):
                             await message.answer(f'Http статус: {response.status_code} ({response.reason})')
                 else:
                     if len(db_values) == 0:
-                        if ' ' in message.text:
-                            db_values.append(message.text)
-                        else:
-                            await message.answer('Некорректно введены имя и фамилия')
+                        db_values.append(message.text)
                     else:
                         if message.text.isdigit():
                             db_values.append(int(message.text))
@@ -454,7 +454,11 @@ async def register_asks_message(message: types.Message):
     if stop:
         await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
-        telegram_values = [message.from_user.first_name + " " + message.from_user.last_name, 'Мужчина',
+        if message.from_user.last_name:
+            ln = message.from_user.first_name + " " + message.from_user.last_name
+        else:
+            ln = message.from_user.first_name
+        telegram_values = [ln, 'Мужчина',
                            message.from_user.username, '', '', '']
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         if ind <= 2:

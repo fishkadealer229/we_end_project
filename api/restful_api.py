@@ -2,7 +2,7 @@ from flask import jsonify
 from flask_restful import Resource, reqparse
 from sqlite3 import connect, Error
 
-con = connect(r'api\meetings_data.db', check_same_thread=False)
+con = connect(r'api\meetings_data1.db', check_same_thread=False)
 cur = con.cursor()
 
 
