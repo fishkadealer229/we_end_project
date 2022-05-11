@@ -79,8 +79,8 @@ async def begin(message: types.Message):
             keyboard = types.InlineKeyboardMarkup()
             keyboard.insert(types.InlineKeyboardButton(text='Зарегистрироваться', callback_data='common'))
             keyboard.insert(types.InlineKeyboardButton(text='Войти', callback_data='authorize'))
-            await message.answer('Здравствуйте! Я бот для связи между сотрудниками одной компании, созданный компанией'
-                                 ' "Нигэз Студио".', reply_markup=types.ReplyKeyboardRemove())
+            await message.answer('Здравствуйте! Я бот для связи между сотрудниками одной компании',
+                                 reply_markup=types.ReplyKeyboardRemove())
             await message.answer('Мы не нашли вас в списках компании, поэтому предлагаем зарегистрироваться или войти',
                                  reply_markup=keyboard)
     else:
