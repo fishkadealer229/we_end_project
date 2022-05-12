@@ -63,7 +63,7 @@ async def begin(message: types.Message):
     count_values = 1
     last_username = ''
     ind = 0
-    response = requests.get(f'http://127.0.0.1:5000/staff_api/user/id/{message.from_user.id}')
+    response = requests.get(f'http://127.0.0.1:8009/staff_api/user/id/{message.from_user.id}')
     if response:
         response = response.json()
         status = response['status']  # bool
@@ -213,7 +213,7 @@ async def end_register(call: types.CallbackQuery):
         else:
             data = f'{db_values[0]}/{db_values[1]}/{db_values[2]}/{db_values[3]}/{call.from_user.id}/{admin_flag}/' \
                    f'{db_values[4]}'
-            response = requests.get(f'http://127.0.0.1:5000/staff_api/end_register/{data}')
+            response = requests.get(f'http://127.0.0.1:8009/staff_api/end_register/{data}')
             if response:
                 response = response.json()
                 if response['success']:
@@ -272,7 +272,7 @@ async def db_insert(message: types.Message):
                 if register_flag:
                     await message.reply('Эу нормально общайся. ОК?')
                 elif search_flag:
-                    response = requests.get(f'http://127.0.0.1:5000/staff_api/search/<str:{message.text}>')
+                    response = requests.get(f'http://127.0.0.1:8009/staff_api/search/<str:{message.text}>')
                     if response:
                         response = response.json()
                         success = response['success']
@@ -347,7 +347,7 @@ async def db_insert(message: types.Message):
                     else:
                         json['password'] = message.text
                         authorize_flag = False
-                        response = requests.get(f'http://127.0.0.1:5000/staff_api/authorize/{json["username"]}/'
+                        response = requests.get(f'http://127.0.0.1:8009/staff_api/authorize/{json["username"]}/'
                                                 f'{json["password"]}')
                         if response:
                             response = response.json()
