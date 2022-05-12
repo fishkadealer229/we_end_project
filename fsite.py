@@ -19,7 +19,7 @@ api.add_resource(EndRegistration, '/staff_api/end_register/<string:name_surname>
                                   '<string:profession>/<int:user_id>/<string:is_admin>/<string:password>')
 api.add_resource(Search, '/staff_api/search/<string:search_text>')
 api.add_resource(Authorize, '/staff_api/authorize/<string:username>/<string:password>')
-app.config.update(dict(DATABASE=os.path.join(app.root_path, 'api/meetings_data.db')))
+app.config.update(dict(DATABASE=os.path.join(app.root_path, 'api/meetings_data1.db')))
 
 login_manager = LoginManager(app)
 
