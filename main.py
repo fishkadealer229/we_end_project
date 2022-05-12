@@ -58,6 +58,7 @@ async def begin(message: types.Message):
     photo_flag = False
     stop = False
     authorize_flag = False
+    value1 = 0
     password = ''
     update_value = ''
     count_values = 1
@@ -99,6 +100,7 @@ async def menu(message: types.Message):
         keyboard.insert(types.InlineKeyboardButton(text='Войти', callback_data='authorize'))
         keyboard.add(types.InlineKeyboardButton(text='Поиск', callback_data='search'))
         keyboard.add(types.InlineKeyboardButton(text='Изменить свою анкету', callback_data='update_blank'))
+        await message.answer('Загрузка меню...', reply_markup=types.ReplyKeyboardRemove())
         await message.answer('Вот, что может этот ботяра.', reply_markup=keyboard)
 
 
@@ -175,7 +177,7 @@ async def authorize(call: types.CallbackQuery):
         if value1 == 0:
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
             keyboard.add(types.KeyboardButton(text=call.from_user.username))
-            await call.message.answer('Итак авторизация...')
+            await call.message.answer('Итак авторизация...', reply_markup=types.ReplyKeyboardRemove())
             await call.message.answer('Введите свой юзернейм', reply_markup=keyboard)
         else:
             await call.message.answer('Введите свой пароль', reply_markup=types.ReplyKeyboardRemove())
@@ -204,7 +206,7 @@ async def update_blank(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text='end_register')
 async def end_register(call: types.CallbackQuery):
-    global register_flag, admin_flag, update_flag, search_flag
+    global register_flag, admin_flag, update_flag, search_flag, value1
     if stop:
         await call.message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
@@ -217,6 +219,7 @@ async def end_register(call: types.CallbackQuery):
             if response:
                 response = response.json()
                 if response['success']:
+                    value1 = 0
                     keyboard = types.InlineKeyboardMarkup()
                     keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
                     keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
@@ -242,7 +245,8 @@ async def search(call: types.CallbackQuery):
         search_flag = True
         register_flag = False
         update_flag = False
-        await call.message.answer("Введите данные для поиска (Имя Фамилия или должность)")
+        await call.message.answer("Введите данные для поиска (Имя Фамилия или должность)",
+                                  reply_markup=types.ReplyKeyboardRemove())
 
 
 @dp.callback_query_handler(text='ok')
