@@ -71,6 +71,7 @@ async def begin(message: types.Message):
         if is_admin:
             admin_flag = True
         if status:
+            await message.answer('Здравствуйте.', reply_markup=types.ReplyKeyboardMarkup())
             keyboard = types.InlineKeyboardMarkup()
             keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
             keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
