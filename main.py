@@ -299,8 +299,6 @@ async def db_insert(message: types.Message):
                             await message.answer('Хотите кого-то найти?', reply_markup=keyboard)
                         else:
                             await message.answer('К сожалению, по эти данным ничего не найдено:(')
-                            # await message.answer(f'{response["value"]}={response["search_text"].strip()[5:-1]}')
-                            # await message.answer
                     else:
                         await message.answer('Извините, произошла ошибка')
                         await message.answer(f'Http статус: {response.status_code} ({response.reason})')
