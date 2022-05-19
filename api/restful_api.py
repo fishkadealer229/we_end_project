@@ -38,21 +38,26 @@ class Search(Resource):
         lst1 = list(cur.execute('select name_surname from users'))
         value = 'profession'
         for i in lst1:
-            if search_text[5:-1] == i[0].strip():
+            if search_text[5:-1] in i[0].strip():
                 value = 'name_surname'
                 break
-        ask = f'select name_surname, gender, username, profession, user_id from users where {value}="{search_text[5:-1]}"'
+        s = search_text[5:-1]
+        ask = f'select name_surname, gender, username, profession, user_id from users where {value} like "%{s}%"'
         lst = list(cur.execute(ask))
         if len(lst) != 0:
+            big_data = {}
+            num = 0
             for people in lst:
                 data = {
                     'name_surname': people[0],
                     'gender': people[1],
                     'username': people[2],
                     'profession': people[3],
-                    'user_id': people[4],
-                    'success': True}
-                return jsonify(data)
+                    'user_id': people[4]}
+                num += 1
+                big_data[str(num)] = data
+            big_data['success'] = True
+            return jsonify(big_data)
         else:
             return jsonify({'success': False, 'value': value, 'search_text': search_text, 'lst': lst1})
 

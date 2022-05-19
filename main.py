@@ -27,8 +27,8 @@ mes_id = ''
 value1 = 0
 json = {}
 admin_chat_id = 1103098407
-blank_values = ["Имя Фамилия", "Пол", "Юзернейм", 'Должность', 'Пароль']
-asks = ['своё имя и фамилию', 'свой пол', 'свой юзернейм', "свою должность в компании", 'свой пароль']
+blank_values = ["Имя Фамилия", "Пол", "Юзернейм", 'Должность', 'Пароль', 'Фотография']
+asks = ['своё имя и фамилию', 'свой пол', 'свой юзернейм', "свою должность в компании", 'свой пароль', "свою фотографию"]
 ind = 0
 logging.basicConfig(level=logging.INFO)
 
@@ -42,7 +42,7 @@ async def set_default_commands():
 
 
 @dp.message_handler(commands=['start'])
-async def begin(message: types.Message):
+async def begin(message: types.Message, update=False):
     global db_values, register_flag, admin_flag, search_flag, update_flag, new_value, flag, flag1, flag2, photo_flag
     global stop, password, update_value, count_values, last_username, ind, authorize_flag, value1
     await set_default_commands()
@@ -64,7 +64,7 @@ async def begin(message: types.Message):
     count_values = 1
     last_username = ''
     ind = 0
-    response = requests.get(f'http://127.0.0.1:8009/staff_api/user/id/{message.from_user.id}')
+    response = requests.get(f'http://127.0.0.1:8009/staff_api/user/id/{message.chat.id}')
     if response:
         response = response.json()
         status = response['status']  # bool
@@ -77,6 +77,11 @@ async def begin(message: types.Message):
             keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
             keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
             await message.answer('Хотите кого-то найти?', reply_markup=keyboard)
+        elif update:
+            keyboard = types.InlineKeyboardMarkup()
+            keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='update_blank'))
+            keyboard.add(types.InlineKeyboardButton(text='Нет', callback_data='end_register'))
+            await message.answer('Хотите изменить анкету?', reply_markup=keyboard)
         else:
             keyboard = types.InlineKeyboardMarkup()
             keyboard.insert(types.InlineKeyboardButton(text='Зарегистрироваться', callback_data='common'))
@@ -101,7 +106,7 @@ async def menu(message: types.Message):
         keyboard.add(types.InlineKeyboardButton(text='Поиск', callback_data='search'))
         keyboard.add(types.InlineKeyboardButton(text='Изменить свою анкету', callback_data='update_blank'))
         await message.answer('Загрузка меню...', reply_markup=types.ReplyKeyboardRemove())
-        await message.answer('Вот, что может этот ботяра.', reply_markup=keyboard)
+        await message.answer('Вот, что может этот бот.', reply_markup=keyboard)
 
 
 @dp.message_handler(commands=['help'])
@@ -111,7 +116,8 @@ async def help1(message: types.Message):
     keyboard.add(types.InlineKeyboardButton(text='Как стать админом?', callback_data="admin_moment"))
     keyboard.add(types.InlineKeyboardButton(text='Как попасть к вам в компанию?', callback_data='new_workers'))
     keyboard.add(types.InlineKeyboardButton(text='Другое', callback_data='other'))
-    await message.answer("Здравствуйте. Какой вопрос у вас возник?", reply_markup=keyboard)
+    await message.answer("Здравствуйте, это команда организаторов сабантуя. Какой вопрос у вас возник?",
+                         reply_markup=keyboard)
 
 
 @dp.callback_query_handler(text='register_help')
@@ -138,7 +144,11 @@ async def other(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text='common')
 async def register_asks(call: types.CallbackQuery):
-    global asks, ind, stop
+    global asks, ind, stop, authorize_flag, search_flag, update_flag, register_flag
+    search_flag = False
+    update_flag = False
+    authorize_flag = False
+    register_flag = False
     if stop:
         await call.message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
@@ -169,11 +179,14 @@ async def register_asks(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text='authorize')
 async def authorize(call: types.CallbackQuery):
-    global authorize_flag, value1
+    global authorize_flag, update_flag, search_flag, register_flag, value1
     if stop:
         await call.message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
         authorize_flag = True
+        register_flag = False
+        update_flag = False
+        search_flag = False
         if value1 == 0:
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
             keyboard.add(types.KeyboardButton(text=call.from_user.username))
@@ -200,7 +213,7 @@ async def update_blank(call: types.CallbackQuery):
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
             for i in blank_values:
                 keyboard.add(types.KeyboardButton(text=f'{i}'))
-            await call.message.answer('Что вас не устраивает?', reply_markup=keyboard)
+            await call.message.answer('Что хотите изменить?', reply_markup=keyboard)
             await call.answer()
 
 
@@ -276,33 +289,40 @@ async def db_insert(message: types.Message):
                 if register_flag:
                     await message.reply('Эу нормально общайся. ОК?')
                 elif search_flag:
-                    response = requests.get(f'http://127.0.0.1:8009/staff_api/search/<str:{message.text}>')
-                    if response:
-                        response = response.json()
-                        success = response['success']
-                        if success:
-                            if ' ' in response['name_surname']:
-                                name, surname = response['name_surname'].split()  # str
-                            else:
-                                name, surname = response['name_surname'], ''
-                            gender = response['gender']  # str
-                            username = response['username']  # str
-                            username = '@' + username
-                            profession = response['profession']  # str
-                            user_id = response['user_id']  # str
-                            photo_path = f'\\photos\\{user_id}.jpg'
-                            text = f'Имя: {name}\nФамилия: {surname}\nПол: {gender}\nДолжность: {profession}\n{username}'
-                            await bot.send_photo(message.chat.id, types.InputFile(photo_path), caption=text)
-                            keyboard = types.InlineKeyboardMarkup()
-                            keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
-                            keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
-                            await message.answer('Хотите кого-то найти?', reply_markup=keyboard)
-                        else:
-                            await message.answer('К сожалению, по эти данным ничего не найдено:(')
+                    update_flag = False
+                    if ' ' in message.text:
+                        spis = message.text.split()
                     else:
-                        await message.answer('Извините, произошла ошибка')
-                        await message.answer(f'Http статус: {response.status_code} ({response.reason})')
-                    search_flag = False
+                        spis = [message.text]
+                    for i in spis:
+                        response = requests.get(f'http://127.0.0.1:8009/staff_api/search/<str:{i.capitalize()}>')
+                        if response:
+                            response = response.json()
+                            success = response['success']
+                            if success:
+                                for j in response.keys():
+                                    if j != 'success':
+                                        response1 = response[j]
+                                        if ' ' in response1['name_surname']:
+                                            name, surname = response1['name_surname'].split()  # str
+                                        else:
+                                            name, surname = response1['name_surname'], ''
+                                        gender = response1['gender']  # str
+                                        username = response1['username']  # str
+                                        username = '@' + username
+                                        profession = response1['profession']  # str
+                                        user_id = response1['user_id']  # str
+                                        photo_path = f'\\photos1\\{user_id}.jpg'
+                                        text = f'Имя: {name}\nФамилия: {surname}\nПол: {gender}\nДолжность: {profession}\n{username}'
+                                        await bot.send_photo(message.chat.id, types.InputFile(os.getcwd() + photo_path),
+                                                             caption=text)
+                                        keyboard = types.InlineKeyboardMarkup()
+                                        keyboard.insert(types.InlineKeyboardButton(text='Да', callback_data='search'))
+                                        keyboard.insert(types.InlineKeyboardButton(text='Нет', callback_data='ok'))
+                                        await message.answer('Хотите кого-то найти?', reply_markup=keyboard)
+                                search_flag = False
+                            else:
+                                await message.answer('К сожалению, по эти данным ничего не найдено:(')
                 elif update_flag:
                     new_value = True
                     if new_value and message.text in blank_values:
@@ -378,14 +398,16 @@ async def db_insert(message: types.Message):
                             db_values.append(int(message.text))
                         else:
                             db_values.append(message.text)
-                    if not photo_flag:
-                        await next1(message)
-                    else:
+                    if photo_flag:
                         keyboard = types.InlineKeyboardMarkup()
                         keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='end_register'))
                         keyboard.add(types.InlineKeyboardButton(text='Нет', callback_data='update_blank'))
                         await message.answer('Отлично', reply_markup=types.ReplyKeyboardRemove())
                         await message.answer('Закончим регистрацию?', reply_markup=keyboard)
+                    elif search_flag:
+                        pass
+                    else:
+                        await next1(message)
 
 
 @dp.callback_query_handler(text='no')
@@ -401,7 +423,7 @@ async def next1(message: types.Message):
         await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
         if len(db_values) == 0:
-            await begin(message)
+            await begin(message, update=True)
         else:
             if count_values == len(db_values):
                 ind += 1
@@ -433,7 +455,7 @@ async def handle_docs_photo(message: types.Message):
     if stop:
         await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
-        await message.answer(await message.photo[-1].download(f'\\photos\\{message.chat.id}.jpg'))
+        await message.answer(await message.photo[-1].download(f'{os.getcwd()}\\photos1\\{message.chat.id}.jpg'))
         await message.answer('Ваше фото успешно сохранено.')
         keyboard = types.InlineKeyboardMarkup()
         keyboard.add(types.InlineKeyboardButton(text='Да', callback_data='update_blank'))
@@ -449,7 +471,7 @@ async def files(message: types.Message):
     if stop:
         await message.answer('Упс... Похоже у вас скрыт юзернейм. Откройте его и перезапустите бота')
     else:
-        await message.answer('Извините, я очень боюсь файловых бомб >-<')
+        await message.answer('О_о')
 
 
 async def register_asks_message(message: types.Message):
